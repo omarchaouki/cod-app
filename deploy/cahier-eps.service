@@ -1,0 +1,47 @@
+# /etc/systemd/system/cahier-eps.service
+#
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now cahier-eps
+#   sudo systemctl status cahier-eps
+#   sudo journalctl -u cahier-eps -f
+
+[Unit]
+Description=Cahier EPS (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/cahier-eps/current
+
+# Secrets live in a root-owned file readable only by the service account.
+# Never commit this file; see .env.example for the list of variables.
+EnvironmentFile=/etc/cahier-eps/env
+
+Environment=NODE_ENV=production
+Environment=PORT=3000
+# Bind to loopback only — nginx is the only thing that should reach Node.
+Environment=HOSTNAME=127.0.0.1
+
+ExecStart=/usr/bin/node server.js
+
+Restart=always
+RestartSec=3
+
+# Restart rather than die if a request ever leaks memory.
+MemoryMax=1G
+
+# Basic hardening: the process needs to read its own directory and nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/cahier-eps
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cahier-eps
+
+[Install]
+WantedBy=multi-user.target
